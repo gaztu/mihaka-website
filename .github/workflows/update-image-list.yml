@@ -3,7 +3,7 @@ name: Update Image List
 on:
   push:
     paths:
-      - 'tuatahi-tuari/images/**'  # Trigger when images are added/removed/changed
+      - 'tuatahi-tuari/images/**'  # Trigger when anything in the images folder changes
 
 jobs:
   update-json:
@@ -13,30 +13,31 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v2
 
-    - name: Generate image-list.json
+    - name: Generate image-list.json (handles spaces in filenames)
       run: |
         IMAGE_DIR="tuatahi-tuari/images"
         JSON_FILE="tuatahi-tuari/image-list.json"
 
-        # Find image files and remove the path prefix for JSON
-        IMAGE_FILES=$(find "$IMAGE_DIR" -type f \( -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" -o -iname "*.gif" \) | sed "s|$IMAGE_DIR/||")
+        # Start JSON file
+        echo "{" > "$JSON_FILE"
+        echo '  "images": [' >> "$JSON_FILE"
 
-        # Generate the JSON structure
-        echo "{
-          \"images\": [" > "$JSON_FILE"
-
-        for IMAGE in $IMAGE_FILES; do
-          echo "  \"$IMAGE\"," >> "$JSON_FILE"
+        # Read filenames safely (handles spaces)
+        find "$IMAGE_DIR" -type f \( -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" -o -iname "*.gif" \) -print0 |
+        while IFS= read -r -d '' IMAGE; do
+          REL_PATH="${IMAGE#$IMAGE_DIR/}"
+          echo "    \"${REL_PATH}\"," >> "$JSON_FILE"
         done
 
         # Remove trailing comma and close JSON
         sed -i '$ s/,$//' "$JSON_FILE"
-        echo "]}" >> "$JSON_FILE"
+        echo "  ]" >> "$JSON_FILE"
+        echo "}" >> "$JSON_FILE"
 
     - name: Commit and push changes
       uses: EndBug/add-and-commit@v7
       with:
         author_name: 'GitHub Actions'
         author_email: 'actions@github.com'
-        message: 'Update image-list.json'
+        message: 'docs: update image-list.json'
         add: 'tuatahi-tuari/image-list.json'
