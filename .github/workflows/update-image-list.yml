@@ -3,7 +3,7 @@ name: Update Image List
 on:
   push:
     paths:
-      - 'images/**'  # Trigger the action when anything in the images folder is modified
+      - 'tuatahi-tuari/images/**'  # Trigger the action when anything in the images folder is modified
 
 jobs:
   update-json:
