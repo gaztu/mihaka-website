@@ -1,0 +1,36 @@
+name: Update Image List
+
+on:
+  push:
+    paths:
+      - 'images/**'  # Trigger the action when anything in the images folder is modified
+
+jobs:
+  update-json:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: List image files and generate JSON
+      run: |
+        # Get a list of image files in the 'images' folder (you can add more formats if needed)
+        IMAGE_FILES=$(find images -type f -name "*.jpg" -o -name "*.png" -o -name "*.jpeg" -o -name "*.gif" | sed 's|images/||')
+
+        # Generate the JSON structure
+        echo "{
+          \"images\": [" > image-list.json
+        for IMAGE in $IMAGE_FILES; do
+          echo "  \"$IMAGE\"," >> image-list.json
+        done
+        # Remove last comma and close JSON array and object
+        sed -i '$ s/,$//' image-list.json
+        echo "]}" >> image-list.json
+
+    - name: Commit and push changes
+      uses: EndBug/add-and-commit@v7
+      with:
+        author_name: 'GitHub Actions'
+        author_email: 'actions@github.com'
+        message: 'Update image-list.json'
