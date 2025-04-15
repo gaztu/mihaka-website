@@ -1,9 +1,9 @@
-name: Update Image List
+name: Update Media List
 
 on:
   push:
     paths:
-      - 'tuatahi-tuari/images/**'  # Trigger when anything in the images folder changes
+      - 'tuatahi-tuari/images/**'
 
 jobs:
   update-json:
@@ -13,31 +13,46 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v2
 
-    - name: Generate image-list.json (handles spaces in filenames)
+    - name: Install curl & jq
+      run: sudo apt-get install -y jq curl
+
+    - name: Generate image-list.json with images and Cloudinary videos
+      env:
+        CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
+        API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
+        API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
       run: |
         IMAGE_DIR="tuatahi-tuari/images"
         JSON_FILE="tuatahi-tuari/image-list.json"
+        TEMP_FILE=$(mktemp)
 
-        # Start JSON file
-        echo "{" > "$JSON_FILE"
-        echo '  "images": [' >> "$JSON_FILE"
+        echo '{ "media": [' > "$TEMP_FILE"
 
-        # Read filenames safely (handles spaces)
+        # Add images
         find "$IMAGE_DIR" -type f \( -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.png" -o -iname "*.gif" \) -print0 |
         while IFS= read -r -d '' IMAGE; do
           REL_PATH="${IMAGE#$IMAGE_DIR/}"
-          echo "    \"${REL_PATH}\"," >> "$JSON_FILE"
+          echo "    {\"type\": \"image\", \"src\": \"${REL_PATH}\"}," >> "$TEMP_FILE"
         done
 
-        # Remove trailing comma and close JSON
-        sed -i '$ s/,$//' "$JSON_FILE"
-        echo "  ]" >> "$JSON_FILE"
-        echo "}" >> "$JSON_FILE"
+        # Add Cloudinary videos
+        VIDEO_RESPONSE=$(curl -s -u "$API_KEY:$API_SECRET" \
+          "https://api.cloudinary.com/v1_1/$CLOUD_NAME/resources/video?prefix=nan-videos/&max_results=100")
+
+        echo "$VIDEO_RESPONSE" | jq -r '.resources[] | "    {\"type\": \"video\", \"src\": \"" + .secure_url + "\"},"' >> "$TEMP_FILE"
+
+        # Remove trailing comma
+        sed -i '$ s/,$//' "$TEMP_FILE"
+
+        echo '] }' >> "$TEMP_FILE"
+
+        # Move to final JSON file
+        mv "$TEMP_FILE" "$JSON_FILE"
 
     - name: Commit and push changes
       uses: EndBug/add-and-commit@v7
       with:
         author_name: 'GitHub Actions'
         author_email: 'actions@github.com'
-        message: 'docs: update image-list.json'
+        message: 'docs: update image-list.json with images and videos'
         add: 'tuatahi-tuari/image-list.json'
