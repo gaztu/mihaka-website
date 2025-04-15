@@ -56,42 +56,47 @@
           document.getElementById('column2'),
           document.getElementById('column3')
         ];
-  
+
         const columnHeights = [0, 0, 0];
-  
+
         const mediaItems = data.media;
-  
+
         mediaItems.forEach(item => {
           if (item.type === 'image') {
             const img = document.createElement('img');
-            img.src = 'images/' + item.src;
             img.alt = item.src;
             img.className = "w-100 shadow-1-strong rounded mb-4";
             img.loading = 'lazy';
-  
+
             img.onload = () => {
               const targetIndex = columnHeights.indexOf(Math.min(...columnHeights));
               columns[targetIndex].appendChild(img);
               columnHeights[targetIndex] += img.height;
             };
+
+            img.onerror = () => {
+              console.warn('Image failed to load:', item.src);
+            };
+
+            img.src = 'images/' + item.src;
           } else if (item.type === 'video') {
             // Create wrapper div for responsive ratio
             const wrapper = document.createElement('div');
             wrapper.className = 'ratio ratio-16x9 mb-4';
-  
+
             // Create video element
             const video = document.createElement('video');
             video.controls = true;
             video.preload = 'metadata'; // Ensures we can get video height early
             video.className = 'w-100 rounded shadow-1-strong';
-  
+
             const source = document.createElement('source');
             source.src = item.src;
             source.type = 'video/mp4';
-  
+
             video.appendChild(source);
             wrapper.appendChild(video);
-  
+
             // Wait for metadata to load
             video.onloadedmetadata = () => {
               const targetIndex = columnHeights.indexOf(Math.min(...columnHeights));
