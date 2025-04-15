@@ -64,6 +64,7 @@
         mediaItems.forEach(item => {
           if (item.type === 'image') {
             const img = document.createElement('img');
+            img.src = 'images/' + item.src;
             img.alt = item.src;
             img.className = "w-100 shadow-1-strong rounded mb-4";
             img.loading = 'lazy';
@@ -77,8 +78,6 @@
             img.onerror = () => {
               console.warn('Image failed to load:', item.src);
             };
-
-            img.src = 'images/' + item.src;
           } else if (item.type === 'video') {
             // Create wrapper div for responsive ratio
             const wrapper = document.createElement('div');
