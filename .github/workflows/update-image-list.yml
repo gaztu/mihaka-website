@@ -36,8 +36,7 @@ jobs:
         done
 
         # Add Cloudinary videos
-        VIDEO_RESPONSE=$(curl -s -u "$API_KEY:$API_SECRET" \
-          "https://api.cloudinary.com/v1_1/$CLOUD_NAME/resources/video?prefix=nan-videos/&max_results=100")
+        VIDEO_RESPONSE=$(curl -s -u "$API_KEY:$API_SECRET" "https://${API_KEY}:${API_SECRET}@api.cloudinary.com/v1_1/$CLOUD_NAME/resources/video/upload?prefix=nan-videos/&max_results=100")
 
         echo "$VIDEO_RESPONSE" | jq -r '.resources[] | "    {\"type\": \"video\", \"src\": \"" + .secure_url + "\"},"' >> "$TEMP_FILE"
 
